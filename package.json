@@ -6,6 +6,7 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
+    "json-server": "json-server --watch db.json --port 3001",
     "lint": "next lint"
   },
   "dependencies": {
