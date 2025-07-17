@@ -61,7 +61,8 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo }) => {
         <div className='space-x-5'>
         <span>{todo.id}</span>
           <span
-            style={{ textDecoration: todo.completed ? 'line-through' : 'none', marginRight: 8 }}
+            className={todo.completed ? 'line-through decoration-red-500 decoration-4' : ''}
+            style={{ marginRight: 8 }}
           >
             {todo.title}
           </span>
