@@ -9,17 +9,20 @@ const TodoList: React.FC = () => {
   if (error) return <div>Error loading todos</div>;
 
   return (
-    <div>
-    {/* <div className='flex space-x-5 items-center'>
-        <p>Status</p>
-        <p>ID</p>
-        <p>Title</p>
-    </div> */}
-        <ul>
-      {todos?.map((todo) => (
-        <TodoItem key={todo.id} todo={todo} />
-      ))}
-    </ul>
+    <div className="max-w-2xl mx-auto bg-white shadow-lg rounded-xl p-6 mt-8">
+    
+      <div className="border-b border-gray-200 mb-4" />
+      {todos && todos.length > 0 ? (
+        <ul className="divide-y divide-gray-100">
+          {todos.map((todo) => (
+            <TodoItem key={todo.id} todo={todo} />
+          ))}
+        </ul>
+      ) : (
+        <div className="text-center text-gray-400 py-8 text-lg">
+          No todos yet. Add your first task!
+        </div>
+      )}
     </div>
   );
 };
