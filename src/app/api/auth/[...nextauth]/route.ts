@@ -1,42 +1,129 @@
+/* eslint-disable no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import NextAuth from 'next-auth';
+import { connectToDatabase } from '@/lib/mongoose';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { MongoDBAdapter } from '@next-auth/mongodb-adapter';
-import clientPromise from '@/lib/mongodb';
-import { compare } from 'bcryptjs';
-import type { NextAuthOptions } from 'next-auth';
+import UserModel from '@/models/users';
+import { verifyPassword } from '@/lib/pass';
+import GoogleProvider from 'next-auth/providers/google';
 
-export const authOptions: NextAuthOptions = {
-  adapter: MongoDBAdapter(clientPromise),
+export const authConfig = {
   providers: [
     CredentialsProvider({
-      name: 'Credentials',
+      id: 'credentials',
+      name: 'credentials',
       credentials: {
-        email: { label: 'Email', type: 'email', placeholder: 'jsmith@example.com' },
-        password: { label: 'Password', type: 'password' }
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        const client = await clientPromise;
-        const usersCollection = client.db().collection('users');
-        const user = await usersCollection.findOne({ email: credentials?.email });
-        if (!user) {
-          throw new Error('No user found with this email');
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            return null;
+          }
+
+          await connectToDatabase();
+
+          const user = await UserModel.findOne({ email: credentials.email });
+
+          if (!user) {
+            return null;
+          }
+
+          const passwordString = String(user.get('password'));
+
+          if (!passwordString) {
+            return null;
+          }
+
+          const passwordInput =
+            typeof credentials.password === 'string' ? credentials.password : '';
+          const isValid = await verifyPassword(passwordInput, passwordString);        
+
+          if (!isValid) {
+          
+            return null;
+          }
+
+          return {
+            id: user._id.toString(),
+            email: user.email,
+            name: user.name,
+            image: user.image,
+          };
+        } catch (error) {
+          return null;
         }
-        const isValid = await compare(credentials!.password, user.password);
-        if (!isValid) {
-          throw new Error('Invalid password');
-        }
-        return { id: user._id.toString(), email: user.email };
-      }
-    })
+      },
+    }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
   ],
-  session: {
-    strategy: 'jwt',
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (token && session.user) {
+        session.user.id = token.id as string;
+      }
+      return session;
+    },
+    async signIn({ user, account, profile }) {
+      if (account?.provider === 'google') {
+        try {
+          await connectToDatabase();
+          let dbUser = await UserModel.findOne({ email: user.email });
+
+         
+          if (!dbUser) {
+            dbUser = await UserModel.create({
+              name: user.name,
+              email: user.email,
+              image: user.image,
+             
+            });
+          }
+
+          user.id = dbUser._id.toString();
+
+          return true;
+        } catch (error) {
+          return true;
+        }
+      }
+      return true;
+    },
   },
   pages: {
-    signIn: '/auth',
+    signIn: '/auth/signin',
+    error: '/auth/error',
+    signOut: '/',
+  },
+  session: {
+    strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
   },
   secret: process.env.NEXTAUTH_SECRET,
 };
 
-const handler = NextAuth(authOptions);
-export { handler as GET, handler as POST };
+export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
+
+// Export the request handlers for the Next.js route handler API
+export const { GET, POST } = handlers;
