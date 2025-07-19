@@ -1,20 +1,20 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import NextAuth from 'next-auth';
-import { connectToDatabase } from '@/lib/mongoose';
-import CredentialsProvider from 'next-auth/providers/credentials';
-import UserModel from '@/models/users';
-import { verifyPassword } from '@/lib/pass';
-import GoogleProvider from 'next-auth/providers/google';
+import NextAuth from "next-auth";
+import { connectToDatabase } from "@/lib/mongoose";
+import CredentialsProvider from "next-auth/providers/credentials";
+import UserModel from "@/models/users";
+import { verifyPassword } from "@/lib/pass";
+import GoogleProvider from "next-auth/providers/google";
 
 export const authConfig = {
   providers: [
     CredentialsProvider({
-      id: 'credentials',
-      name: 'credentials',
+      id: "credentials",
+      name: "credentials",
       credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' },
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
         try {
@@ -30,18 +30,19 @@ export const authConfig = {
             return null;
           }
 
-          const passwordString = String(user.get('password'));
+          const passwordString = String(user.get("password"));
 
           if (!passwordString) {
             return null;
           }
 
           const passwordInput =
-            typeof credentials.password === 'string' ? credentials.password : '';
-          const isValid = await verifyPassword(passwordInput, passwordString);        
+            typeof credentials.password === "string"
+              ? credentials.password
+              : "";
+          const isValid = await verifyPassword(passwordInput, passwordString);
 
           if (!isValid) {
-          
             return null;
           }
 
@@ -75,18 +76,16 @@ export const authConfig = {
       return session;
     },
     async signIn({ user, account, profile }) {
-      if (account?.provider === 'google') {
+      if (account?.provider === "google") {
         try {
           await connectToDatabase();
           let dbUser = await UserModel.findOne({ email: user.email });
 
-         
           if (!dbUser) {
             dbUser = await UserModel.create({
               name: user.name,
               email: user.email,
               image: user.image,
-             
             });
           }
 
@@ -101,22 +100,22 @@ export const authConfig = {
     },
   },
   pages: {
-    signIn: '/auth/signin',
-    error: '/auth/error',
-    signOut: '/',
+    signIn: "/auth/signin",
+    error: "/auth/error",
+    signOut: "/",
   },
   session: {
-    strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60,
   },
   cookies: {
     sessionToken: {
       name: `next-auth.session-token`,
       options: {
         httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
       },
     },
   },
@@ -125,5 +124,4 @@ export const authConfig = {
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
 
-// Export the request handlers for the Next.js route handler API
 export const { GET, POST } = handlers;
