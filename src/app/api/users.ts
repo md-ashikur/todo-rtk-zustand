@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 // pages/api/users.ts
 import { NextApiRequest, NextApiResponse } from 'next';
-import { connectToDatabase } from '@/lib/mongoose';
+import  connectToDatabase  from '@/lib/dbConnect';
 import User from '../../models/users';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {

@@ -4,7 +4,7 @@ import { Todo } from "@/types/todo";
 
 export const todosApi = createApi({
   reducerPath: "todosApi",
-  baseQuery: fetchBaseQuery({ baseUrl: "http://localhost:3001/" }),
+  baseQuery: fetchBaseQuery({ baseUrl: "/api/" }), // Use Next.js API
   tagTypes: ["Todos"],
   endpoints: (builder) => ({
     getTodos: builder.query<Todo[], void>({
@@ -19,7 +19,7 @@ export const todosApi = createApi({
       }),
       invalidatesTags: ["Todos"],
     }),
-    toggleTodo: builder.mutation<Todo, {id:number; completed: boolean}>({
+    toggleTodo: builder.mutation<Todo, {id:string; completed: boolean}>({
       query: ({id, completed})=> ({
         url:`todos/${id}`,
         method: "PATCH",
@@ -27,7 +27,7 @@ export const todosApi = createApi({
       }),
       invalidatesTags: ["Todos"],
     }),
-    updateTodo: builder.mutation<Todo, {id:number; title:string}>({
+    updateTodo: builder.mutation<Todo, {id:string; title:string}>({
       query: ({id, title}) => ({
         url: `todos/${id}`,
         method: "PUT",
@@ -35,7 +35,7 @@ export const todosApi = createApi({
       }),
       invalidatesTags: ['Todos'],
     }),
-    deleteTodo: builder.mutation<{ success: boolean }, number>({
+    deleteTodo: builder.mutation<{ success: boolean }, string>({
       query: (id) => ({
         url: `todos/${id}`,
         method: "DELETE",
@@ -44,8 +44,6 @@ export const todosApi = createApi({
     })
   }),
 });
-
-
 export const{
   useGetTodosQuery,
   useAddTodoMutation,

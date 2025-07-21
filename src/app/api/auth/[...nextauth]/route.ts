@@ -1,7 +1,11 @@
-/* eslint-disable no-unused-vars */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import NextAuth from "next-auth";
-import { connectToDatabase } from "@/lib/mongoose";
+// ...existing code...
+import NextAuth from "next-auth/next";
+import { SessionStrategy } from "next-auth";
+import type { User, Account, Profile } from "next-auth";
+type UserWithId = User & { id?: string };
+import type { JWT } from "next-auth/jwt";
+import type { Session } from "next-auth";
+import connectToDatabase from "@/lib/dbConnect"; 
 import CredentialsProvider from "next-auth/providers/credentials";
 import UserModel from "@/models/users";
 import { verifyPassword } from "@/lib/pass";
@@ -51,50 +55,63 @@ export const authConfig = {
             email: user.email,
             name: user.name,
             image: user.image,
+            role: user.role,
           };
-        } catch (error) {
+        } catch {
           return null;
         }
       },
     }),
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET!,
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }: { token: JWT; user?: UserWithId }) {
       if (user) {
         token.id = user.id;
+        if ((user as UserWithId & { role?: string }).role) {
+          token.role = (user as UserWithId & { role?: string }).role;
+        }
       }
       return token;
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: Session; token: JWT }) {
       if (token && session.user) {
-        session.user.id = token.id as string;
+        (session.user as UserWithId & { role?: string }).id = token.id as string;
+        if (token.role) {
+          (session.user as UserWithId & { role?: string }).role = token.role as string;
+        }
+        if (token.name) {
+          (session.user as UserWithId & { role?: string }).name = token.name as string;
+        }
+        // Fallback: if no name, use email
+        if (!(session.user as UserWithId & { role?: string }).name && token.email) {
+          (session.user as UserWithId & { role?: string }).name = token.email as string;
+        }
       }
       return session;
     },
-    async signIn({ user, account, profile }) {
+    async signIn(params: {
+      user: UserWithId;
+      account: Account | null;
+      profile?: Profile;
+      email?: { verificationRequest?: boolean };
+      credentials?: Record<string, unknown>;
+    }) {
+      const { user, account } = params;
       if (account?.provider === "google") {
-        try {
-          await connectToDatabase();
-          let dbUser = await UserModel.findOne({ email: user.email });
-
-          if (!dbUser) {
-            dbUser = await UserModel.create({
-              name: user.name,
-              email: user.email,
-              image: user.image,
-            });
-          }
-
-          user.id = dbUser._id.toString();
-
-          return true;
-        } catch (error) {
-          return true;
+        await connectToDatabase();
+        let dbUser = await UserModel.findOne({ email: user.email });
+        if (!dbUser) {
+          dbUser = await UserModel.create({
+            name: user.name,
+            email: user.email,
+            image: user.image,
+          });
         }
+        user.id = dbUser._id.toString();
       }
       return true;
     },
@@ -105,7 +122,7 @@ export const authConfig = {
     signOut: "/",
   },
   session: {
-    strategy: "jwt",
+    strategy: "jwt" as SessionStrategy,
     maxAge: 30 * 24 * 60 * 60,
   },
   cookies: {
@@ -122,6 +139,6 @@ export const authConfig = {
   secret: process.env.NEXTAUTH_SECRET,
 };
 
-export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
-
+export const authOptions = authConfig;
+const handlers = NextAuth(authOptions);
 export const { GET, POST } = handlers;

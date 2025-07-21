@@ -6,6 +6,7 @@ export interface IUser {
   email: string;
   password: string;
   image?: string;
+  role?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,6 +29,11 @@ const UserSchema = new mongoose.Schema<IUser>(
     },
     image: {
       type: String,
+    },
+    role: {
+      type: String,
+      default: 'user',
+      enum: ['user', 'admin'],
     },
   },
   {

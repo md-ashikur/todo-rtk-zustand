@@ -23,7 +23,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo }) => {
 
   const handleUpdate = async () => {
     if(editTitle.trim() && editTitle !== todo.title) {
-      await updateTodo({ id: todo.id, title: editTitle });
+      await updateTodo({ id: String(todo.id), title: editTitle });
       setEditingId(null);
     }
   }
@@ -40,7 +40,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo }) => {
         <input
           type="checkbox"
           checked={todo.completed}
-          onChange={() => toggleTodo({ id: todo.id, completed: !todo.completed })}
+          onChange={() => toggleTodo({ id: String(todo.id), completed: !todo.completed })}
           className="accent-red-500 w-5 h-5 cursor-pointer"
           title={todo.completed ? 'Mark as active' : 'Mark as completed'}
         />
@@ -97,7 +97,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo }) => {
         )}
       </div>
       <button
-        onClick={() => deleteTodo(todo.id)}
+        onClick={() => deleteTodo(String(todo.id))}
         className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded flex items-center gap-1 ml-4"
         title="Delete"
       >
