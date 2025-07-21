@@ -4,6 +4,8 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { FiUserPlus } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
+import {RegisterLink, LoginLink} from "@kinde-oss/kinde-auth-nextjs/components";
+
 
 interface SignUpFormData {
   name: string;
@@ -82,6 +84,15 @@ export default function SignUpPage() {
       <div className="mt-4 text-center">
         <a href="/auth/signin" className="text-blue-500 hover:underline">Already have an account? Sign In</a>
       </div>
+
+
+
+   <div className="text-green-600 text-sm mt-2">
+       <LoginLink>Sign in</LoginLink>
+
+<RegisterLink>Sign up</RegisterLink>
+   </div>
+
     </div>
   );
 }
